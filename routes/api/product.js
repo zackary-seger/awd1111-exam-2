@@ -17,25 +17,12 @@ const newProductSchema = Joi.object({
   price: Joi.string().min(1).trim().required(),
 });
 
-const updateBugSchema = Joi.object({
-  title: Joi.string().trim(),
+const updateProductSchema = Joi.object({
+  name: Joi.string().trim(),
   description: Joi.string().trim(),
-  reproductionSteps: Joi.string().min(1).trim(),
-  classification: Joi.string().min(1).trim(),
-  closed: Joi.bool(),
+  category: Joi.string().min(1).trim(),
+  price: Joi.string().min(1).trim(),
 }).min(1);
-
-const classifySchema = Joi.object({
-  classification: Joi.string().trim().required(),
-});
-
-const assignSchema = Joi.object({
-  assignedToUserId: Joi.string().trim(),
-});
-
-const newTestCaseSchema = Joi.object({
-  bugTestCase: Joi.string().required()
-});
 
 // Register Routes
 router.get('/list', async (req, res, next) => {
@@ -88,96 +75,35 @@ router.put('/new', validBody(newProductSchema), async (req, res, next) => {
 
 });
 
-router.put('/:bugId', validId('bugId'), validBody(updateBugSchema), async (req, res, next) => {
+router.put('/:productId', validId('productId'), validBody(updateProductSchema), async (req, res, next) => {
   // Update existing bug and send response as JSON;
-  const bugId = req.bugId;
-  const updateBug = req.body;
+  const productId = req.productId;
+  const updateProduct = req.body;
 
-  if (!updateBug) {
-    res.status(404).json({ error: 'Bug Not Found'});
+  if (!updateProduct) {
+    res.status(404).json({ error: 'product Not Found'});
   } else {
-    debugMain(updateBug);
-    await dbModule.updateOneBug(bugId, updateBug);
-    res.status(200).json({message: `Bug ${bugId} updated!`});
+    await dbModule.updateOneProduct(productId, updateProduct);
+    res.status(200).json({message: `Product: ${productId} updated!`});
   } 
 });
 
-router.put('/:bugId/classify', validId('bugId'), validBody(classifySchema), async (req, res, next) => {
-  // Classify bug and send response as JSON;
-  const bugId = req.bugId;
-  const classification = req.body;
-  const foundBug = req.body;
-  debugMain(foundBug);
-
-  console.log(bugId);
-
-  if (!foundBug) {
-    res.status(404).json({ error: 'Bug Not Found'});
-  } else {
-    if (classification != undefined) {
-      foundBug.classification = classification;
-      foundBug.classifiedOn = new Date();
-      foundBug.lastUpdated = new Date();
-    }
-    await dbModule.updateOneBug(bugId, foundBug);
-    res.status(200).json({message: `Bug ${bugId} updated!`});
-  }
-
-});
-
-router.put('/:bugId/assign', validId('bugId'), validBody(assignSchema),  async (req, res, next) => {
-  // Assign bug to user and send response as JSON;
-  let bugId = req.bugId;
-  const assignedToUserId = dbModule.newId(req.body.assignedToUserId);
-  debugMain(assignedToUserId);
-
-  const user = await dbModule.findUserById(assignedToUserId);
-  debugMain(user);
-
-  const foundBug = await dbModule.findBugById(bugId);
-  const userName = user.firstName;
-
-  if (!foundBug) {
-    res.status(404).json({ error: `Bug ${bugId} Not Found`});
-  } else {
-    if (user != undefined) {
-      foundBug.assignedToUserId = dbModule.newId(assignedToUserId);
-    } else {
-      res.status(404).json({ error: `UserId ${assignedToUserId} Not Found`});
-    }
-
-    if (userName != undefined) {
-      foundBug.assignedToUserName = userName;
-    } else {
-      res.status(404).json({ error: `Username ${userName} Not Found`});
-    }
-
-    foundBug.assignedOn = new Date();
-    foundBug.lastUpdated = new Date();
-
-    await dbModule.updateOneBug(bugId, foundBug);
-    res.status(200).json({message: `Bug ${bugId} assigned to ${userName}!`});
-}});
-
-router.put('/:bugId/close', validId('bugId'), async (req, res, next) => {
+router.delete('/:productId', validId('productId'), async (req, res, next) => {
   // Close bug and send response as JSON;
-  const bugId = req.bugId;
-  debugMain(bugId);
-  const foundBug = await dbModule.findBugById(bugId);
-  debugMain(foundBug);
+  const productId = req.productId;
 
-  if (!foundBug) {
-    res.status(404).json({ error: `Bug ${bugId} Not Found`});
-  } else { 
-    foundBug.closed = true;
-    foundBug.closedOn = new Date();
-    foundBug.lastUpdated = new Date();
+  try {
+    
+    await dbModule.deleteOneProduct(productId);
+    res.status(200).json({message:`Product: ${productId} deleted!`});
+
+  } catch (err) {
+
+    res.status(400).json({ error: 'Product Not Deleted..'});
+    next(err);
+    
   }
 
-  debugMain("conditional complete");
-
-  await dbModule.updateOneBug(bugId, foundBug);
-  res.status(200).json({message:`Bug ${bugId} closed!`});
 });
  
 // Export Router
