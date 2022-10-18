@@ -26,6 +26,7 @@ const updateProductSchema = Joi.object({
 
 // Register Routes
 router.get('/list', async (req, res, next) => {
+  // Get products array and send response as JSON
   try {
     const products = await dbModule.findAllProducts();
     res.status(200).json(products);
@@ -36,18 +37,22 @@ router.get('/list', async (req, res, next) => {
 });
 
 router.get('/id/:productId', validId('productId'), async (req, res, next) => {
- // Get bugs from bugs array and send response as JSON;
+ // Get product from products array and send response as JSON
  const productId = req.productId;
+ 
+ try {
+
  const foundProduct = await dbModule.findProductById(dbModule.newId(productId));
- if (!foundProduct){
+ res.json(foundProduct);
+
+ } catch (err) {
   res.status(404).json({ error: `Product: ${productId} not found..`})
- } else {
-  res.json(foundProduct);
  }
+
 });
 
 router.put('/new', validBody(newProductSchema), async (req, res, next) => {
-  // Create new bug and send response as JSON
+  // Create new product and send response as JSON
 
   const { name,
           description,
@@ -64,7 +69,16 @@ router.put('/new', validBody(newProductSchema), async (req, res, next) => {
   try {
     
     await dbModule.insertOneProduct(newProduct);
-    res.status(200).json({ message: `Product inserted!..`})
+
+    try {
+
+      const foundProduct = await dbModule.findProductByProductName(name);
+      const productId = foundProduct._id;
+      res.status(200).json({ message: `Product: ${productId} inserted!..`})
+     
+      } catch (err) {
+       res.status(404).json({ error: `Product: ${productId} not found..`})
+      }
 
   } catch (err) {
 
@@ -76,20 +90,28 @@ router.put('/new', validBody(newProductSchema), async (req, res, next) => {
 });
 
 router.put('/:productId', validId('productId'), validBody(updateProductSchema), async (req, res, next) => {
-  // Update existing bug and send response as JSON;
+  // Update existing product and send response as JSON;
   const productId = req.productId;
   const updateProduct = req.body;
 
   if (!updateProduct) {
     res.status(404).json({ error: 'product Not Found'});
   } else {
-    await dbModule.updateOneProduct(productId, updateProduct);
-    res.status(200).json({message: `Product: ${productId} updated!`});
+
+    try {
+
+      await dbModule.updateOneProduct(productId, updateProduct);
+      res.status(200).json({message: `Product: ${productId} updated!`});
+
+    } catch (err) {
+      res.status(400).json({ error: `Product: ${productId} Not Updated..`});
+    }
+
   } 
 });
 
 router.delete('/:productId', validId('productId'), async (req, res, next) => {
-  // Close bug and send response as JSON;
+  // Delete product and send response as JSON;
   const productId = req.productId;
 
   try {
