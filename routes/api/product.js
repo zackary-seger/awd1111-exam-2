@@ -42,14 +42,29 @@ router.get('/id/:productId', validId('productId'), async (req, res, next) => {
  
  try {
 
- const foundProduct = await dbModule.findProductById(dbModule.newId(productId));
- res.json(foundProduct);
+  const foundProduct = await dbModule.findProductById(dbModule.newId(productId));
+  res.status(200).json(foundProduct);
 
  } catch (err) {
   res.status(404).json({ error: `Product: ${productId} not found..`})
  }
 
 });
+
+router.get('/name/:productName', async (req, res, next) => {
+  // Get product from products array and send response as JSON
+  const productName = req.params.productName;
+
+  try {
+ 
+   const foundProduct = await dbModule.findProductByProductName(productName);
+   res.status(200).json(foundProduct);
+ 
+  } catch (err) {
+   res.status(404).json({ error: `Product: ${productName} not found..`})
+  }
+ 
+ });
 
 router.put('/new', validBody(newProductSchema), async (req, res, next) => {
   // Create new product and send response as JSON
@@ -82,7 +97,7 @@ router.put('/new', validBody(newProductSchema), async (req, res, next) => {
 
   } catch (err) {
 
-    res.status(400).json({ error: 'Product Not Inserted..'});
+    res.status(400).json({ error: 'Product Not Inserted.. Please Try Again..'});
     next(err);
     
   }
@@ -121,7 +136,7 @@ router.delete('/:productId', validId('productId'), async (req, res, next) => {
 
   } catch (err) {
 
-    res.status(400).json({ error: 'Product Not Deleted..'});
+    res.status(400).json({ error: 'Product Not Deleted.. Please Try Again..'});
     next(err);
     
   }
