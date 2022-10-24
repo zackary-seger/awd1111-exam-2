@@ -1,5 +1,3 @@
-import Debug from 'debug';
-const debugMain = Debug('app:routes:user');
 import * as dbModule from '../../database.js';
 import express from 'express';
 import Joi from 'joi';
@@ -14,14 +12,14 @@ const newProductSchema = Joi.object({
   name: Joi.string().trim().required(),
   description: Joi.string().trim().required(),
   category: Joi.string().min(1).trim().required(),
-  price: Joi.string().min(1).trim().required(),
+  price: Joi.number().min(1).required(),
 });
 
 const updateProductSchema = Joi.object({
   name: Joi.string().trim(),
   description: Joi.string().trim(),
   category: Joi.string().min(1).trim(),
-  price: Joi.string().min(1).trim(),
+  price: Joi.number().min(1),
 }).min(1);
 
 // Register Routes
@@ -93,6 +91,7 @@ router.put('/new', validBody(newProductSchema), async (req, res, next) => {
      
       } catch (err) {
        res.status(404).json({ error: `Product: ${productId} not found..`})
+       next(err);
       }
 
   } catch (err) {
@@ -110,13 +109,13 @@ router.put('/:productId', validId('productId'), validBody(updateProductSchema), 
   const updateProduct = req.body;
 
   if (!updateProduct) {
-    res.status(404).json({ error: 'product Not Found'});
+    res.status(404).json({ error: 'Product Not Found'});
   } else {
 
     try {
 
       await dbModule.updateOneProduct(productId, updateProduct);
-      res.status(200).json({message: `Product: ${productId} updated!`});
+      res.status(200).json({ message: `Product: ${productId} updated!`});
 
     } catch (err) {
       res.status(400).json({ error: `Product: ${productId} Not Updated..`});
