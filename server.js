@@ -7,6 +7,7 @@ const debugError = Debug("app:error");
 import config from 'config';
 import express from 'express';
 import { productRouter } from './routes/api/product.js';
+import { userRouter } from './routes/api/user.js';
 
 // Create Application
 const app = express();
@@ -15,6 +16,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // Register Routes
 app.use('/api/product', productRouter);
+app.use('/api/user', userRouter);
 app.use('/', express.static('public', { index: 'index.html'}));
 
 app.get('/', (req, res, next) => {
