@@ -23,10 +23,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+app.use( helmet(), cors(), morgan('tiny'));
+
 // Register Routes
 
-app.use('/api/product', productRouter);
-app.use('/api/user', userRouter);
+app.use('/api/product', auth(), productRouter);
+app.use('/api/user', auth(), userRouter);
 app.use('/', express.static('public', { index: 'index.html'}));
 
 app.get('/', (req, res, next) => {

@@ -427,9 +427,7 @@ router.get('/me', isLoggedIn(), async (req, res, next) => {
 
   try {
 
-    // First thing to do here is to decode our authToken so that we can access our user data.
-
-    if (req.cookies.authToken != undefined) {
+      // First thing to do here is to decode our authToken so that we can access our user data.
 
       const secret = config.get('auth.secret');
       const token = req.cookies.authToken;
@@ -458,10 +456,6 @@ router.get('/me', isLoggedIn(), async (req, res, next) => {
         res.status(400).json({error: 'Error: authToken not Verified..'});
       }
 
-    } else {
-      res.status(401).json( `Error: User ${req.email}, is not logged in!`);
-    }
-
   } catch (err) {
     next(err);
   }
@@ -486,8 +480,6 @@ router.get('/me', isLoggedIn(), async (req, res, next) => {
 router.put('/me', isLoggedIn(), validBody(updateUserSchema), async (req, res, next) => {
 
   try {
-
-    if (req.cookies.authToken != undefined) {
 
       const secret = config.get('auth.secret');
       const token = req.cookies.authToken;
@@ -515,7 +507,6 @@ router.put('/me', isLoggedIn(), validBody(updateUserSchema), async (req, res, ne
 
         const authMaxAge = parseInt(config.get('auth.cookieMaxAge'));
         res.cookie('authToken', authToken, { maxAge: authMaxAge, httpOnly: true });
-        req['auth'] = authToken;
 
         await dbModule.updateOneUser(user._id, req.body);
 
@@ -526,10 +517,6 @@ router.put('/me', isLoggedIn(), validBody(updateUserSchema), async (req, res, ne
       } else {
         res.status(404).json({error: `Error: User ${payload.email}, cannot be found!`});
       }
-
-    } else {
-      res.status(401).json( `Error: User ${payload.email}, is not logged in!`);
-    }
 
   } catch (err) {
     next(err);
@@ -547,7 +534,6 @@ router.put('/me', isLoggedIn(), validBody(updateUserSchema), async (req, res, ne
 // ✔️ 3. If the ID is invalid or the user is not found, return a 404 response.
 
 router.get('/:userId', validId('userId'), async (req, res, next) => {
-  if (req.cookies.authToken != undefined) {
     
     try {
 
@@ -563,10 +549,6 @@ router.get('/:userId', validId('userId'), async (req, res, next) => {
     } catch (err) {
       next(err);
     }
-
-  } else {
-    res.status(401).json({error: 'Error: you are not logged in.. Log in and try again..'});
-  }
 
 });
 
@@ -772,106 +754,6 @@ router.put('/login', validBody(loginSchema), async (req, res, next) => {
     next(err);
   }
 
-});
-
-// Update User
-
-// Here in update user the important thing to remember is that we will not need to use the user object that
-// already exists to create our updated one. With this is mind, we still first query and save the user object
-// we wish to update. We do this because we need a test that will prove to us whether or not there is even an
-// object to update. If there is a user object to update it, our updateOneUser() function uses an 
-// updateOne({ $set: {...update} }) operation, where update is equal to the req.body, which, in this case, is
-// equal to data that conforms to the updateUserSchema, as prescribed by our validBody() middleware function.
-
-router.put('/:userId', validId('userId'), validBody(updateUserSchema),  async (req, res, next) => {
-
-  if (req.cookies.authToken != undefined) {
-  
-    try {
-
-        const userId = req.userId;
-        const update = req.body;
-
-        debugMain(`Update User ${userId}`, update);
-        console.log('\n');
-
-        const userFound = await dbModule.findUserById(userId);
-
-        debugMain(req.cookies);
-        console.log('\n');
-
-        if (req.cookies.authToken != undefined) {
-
-          if (!userFound) {
-            res.status(404).json({ error: `User ${userId} not found` });
-          } else {
-
-            await dbModule.updateOneUser(dbModule.newId(userId), update);
-
-            res.json({ message: `User ${userId} updated` });
-            debugMain({log: 'Update Successful!'});
-            console.log('\n');
-
-          }
-
-        } else {
-          res.status(401).json( `Error: User ${req.email}, is not logged in!`);
-        }
-
-      } catch (err) {
-        next(err);
-      }
-
-    } else {
-      res.status(401).json( `Error: User ${req.email}, is not logged in!`);
-    }
-
-});
-
-// Delete User
-
-router.delete('/:userId', validId('userId'), async (req, res, next) => {
- 
-  if (req.cookies.authToken != undefined) {
-
-    try{
-
-      const userId = req.userId;
-      debugMain(`Delete user ${userId}`);
-
-      const userFound = await dbModule.findUserById(dbModule.newId(userId));
-      
-      if (!userFound) {
-        res.status(404).json({ error: `User ${userId} not found` });
-      } else {
-
-        // Create Edit Object
-
-        const editObj = {
-          timestamp: new Date(),
-          collection: 'Users',
-          operation: 'Delete',
-          target: req.userId,
-          update: userFound,
-          authToken: req.cookies.authToken
-        }
-
-        debugMain({editObj: editObj});
-
-        await dbModule.insertOneEdit(editObj);
-        await dbModule.deleteOneUser(dbModule.newId(userId));
-
-        res.json({ message: `User ${userId} deleted` });
-      }
-
-    } catch (err) {
-      next(err);
-    }
-
-  } else {
-    res.status(401).json( `Error: User ${req.email}, is not logged in!`);
-  }
- 
 });
  
 export {router as userRouter};
