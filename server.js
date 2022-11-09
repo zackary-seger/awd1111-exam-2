@@ -8,7 +8,11 @@ const debugError = Debug("app:error");
 import config from 'config';
 import express from 'express';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import cors from 'cors';
+import morgan from 'morgan';
 
+import { auth } from './middleware/auth.js';
 import { productRouter } from './routes/api/product.js';
 import { userRouter } from './routes/api/user.js';
 

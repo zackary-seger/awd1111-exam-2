@@ -10,6 +10,7 @@ import express from 'express';
 import _ from 'lodash';
 import { validId } from '../../middleware/validId.js';
 import { validBody } from '../../middleware/validBody.js';
+import { isLoggedIn } from '../../middleware/isLoggedIn.js';
 
 // Create & Export Router
 const router = express.Router();
@@ -36,7 +37,8 @@ const loginSchema = Joi.object({
 // Define Routes
 
 // Find all Users
-// *COMPLETE: PROGRESS == 💯
+// *COMPLETE: PROGRESS == 95 / 💯
+// Needs isAdmin() Middleware Function..
 
 router.get('/list', async (req, res, next) => {
 
@@ -421,7 +423,7 @@ router.get('/list', async (req, res, next) => {
 // Load Logged In User Profile
 // COMPLETE: PROGRESS == 💯
 
-router.get('/me', async (req, res, next) => {
+router.get('/me', isLoggedIn(), async (req, res, next) => {
 
   try {
 
@@ -481,7 +483,7 @@ router.get('/me', async (req, res, next) => {
 // ✔️ 8. If the user is not logged in, return a 401 response.
 // ✔️ 9. If the user is not found, return a 404 response.
 
-router.put('/me', validBody(updateUserSchema), async (req, res, next) => {
+router.put('/me', isLoggedIn(), validBody(updateUserSchema), async (req, res, next) => {
 
   try {
 
@@ -513,6 +515,7 @@ router.put('/me', validBody(updateUserSchema), async (req, res, next) => {
 
         const authMaxAge = parseInt(config.get('auth.cookieMaxAge'));
         res.cookie('authToken', authToken, { maxAge: authMaxAge, httpOnly: true });
+        req['auth'] = authToken;
 
         await dbModule.updateOneUser(user._id, req.body);
 
@@ -534,7 +537,8 @@ router.put('/me', validBody(updateUserSchema), async (req, res, next) => {
 })
 
 // Find User By ID
-// COMPLETE: PROGRESS == 💯
+// *COMPLETE: PROGRESS == 95 / 💯
+// Needs isAdmin() Middleware Implemented..
 
 // 🔲 Requirements: 
 
