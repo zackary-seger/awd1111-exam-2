@@ -4,7 +4,12 @@
     "port": 5000
   },
   "db": {
-    "url": "DB_URL",
-    "name": "DB_NAME"
+    "url": "mongodb+srv://admin:17044616072@bugtracker.jdlknef.mongodb.net/?retryWrites=true&w=majority",
+    "name": "eCommerce"
+  },
+  "auth": {
+    "secret": "AQEFksGZuA3uZpysCuKpyeHgCkNd3nVrF7c8FwXWGn42hMdwmYt8dDNXRj66W2u9TVrSRv4AXaCGU8YqRVh7cQ8kvpbP3LnfxeRT4KUuYnQrct3ezdRbbA29zfGDAK3DS3jxJuUGjGJTZvTSvzhGWyvm5aMdSTz7WEj462F5GT6dxTzAx5HKFjqQFWvP4geSp5LAae9My5zw5XzNkpuPL5Wq7UXeer5ATFL3BTY7b9XwUWgHadBUTpWPupazrYpn",
+    "tokenExpiresIn": "1h",
+    "cookieMaxAge": "3600000"
   }
 }

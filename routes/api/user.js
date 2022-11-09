@@ -19,18 +19,13 @@ const router = express.Router();
 const newUserSchema = Joi.object({
   email: Joi.string().email({ minDomainSegments: 2 }).trim().required(),
   password: Joi.string().trim().required(),
-  firstName: Joi.string().min(1).trim().required(),
-  lastName: Joi.string().min(1).trim().required(),
-  role: Joi.string().min(1).trim().required(),
+  fullName: Joi.string().trim().required(),
 });
 
 const updateUserSchema = Joi.object({
   email: Joi.string().email({ minDomainSegments: 2 }).trim(),
   password: Joi.string().trim(),
-  firstName: Joi.string().min(1).trim(),
-  lastName: Joi.string().min(1).trim(),
   fullName: Joi.string().min(1).trim(),
-  role: Joi.string().min(1).trim(),
 }).min(1);
 
 const loginSchema = Joi.object({
@@ -41,7 +36,7 @@ const loginSchema = Joi.object({
 // Define Routes
 
 // Find all Users
-// INCOMPLETE: IN PROGRESS..
+// *COMPLETE: PROGRESS == 💯
 
 router.get('/list', async (req, res, next) => {
 
@@ -58,10 +53,10 @@ router.get('/list', async (req, res, next) => {
 
       // We only need to use lines 47-52 once for our database, so they are now commented out..
 
-      await dbModule.newTextIndex(db, 'Users');
-      await dbModule.newDateIndex(db, 'Users', -1, 'Date');
-      await dbModule.newDateComboIndex(db, 'Users', -1, 'DateTitle', 'title');
-      await dbModule.newDateComboIndex(db, 'Users', -1, 'DateClassification', 'classification');
+      // await dbModule.newTextIndex(db, 'Users');
+      // await dbModule.newDateIndex(db, 'Users', -1, 'Date');
+      // await dbModule.newDateComboIndex(db, 'Users', -1, 'DateTitle', 'title');
+      // await dbModule.newDateComboIndex(db, 'Users', -1, 'DateClassification', 'classification');
 
       // Scope..
 
@@ -351,11 +346,11 @@ router.get('/list', async (req, res, next) => {
         let arr2 = dbModule.finalArr;
 
         console.log('\n');
-        debugMain({test: arr2});
+        console.log({test: arr2});
         
         let finalRoleArr = arr2.then(function(result) {
           console.log('\n');
-          debugMain(result); 
+          console.log(result); 
           return result;
         });
 
@@ -424,7 +419,7 @@ router.get('/list', async (req, res, next) => {
 });
 
 // Load Logged In User Profile
-// INCOMPLETE: PRE-PROGRESS..
+// COMPLETE: PROGRESS == 💯
 
 router.get('/me', async (req, res, next) => {
 
@@ -472,7 +467,19 @@ router.get('/me', async (req, res, next) => {
 });
 
 // Update Logged In User Profile
-// INCOMPLETE: PRE-PROGRESS..
+// COMPLETED: TESTING..
+
+// ✔️ 1. Provides a self-service route for user's to update their own information.
+// ✔️ 2. Hash passwords using bcrypt. 
+// ✔️ 3. Generate a new JWT token and store it in a cookie.
+// ✔️ 4. Returns a JSON object containing a message, the userId, and a new token.
+// ✔️ 5. Accept the following fields via the body of the request:
+//        { fullName : string }
+//        { email : string }
+//        { password : string }
+// ✔️ 7. Validate the body of the request using Joi. 
+// ✔️ 8. If the user is not logged in, return a 401 response.
+// ✔️ 9. If the user is not found, return a 404 response.
 
 router.put('/me', validBody(updateUserSchema), async (req, res, next) => {
 
@@ -488,55 +495,52 @@ router.put('/me', validBody(updateUserSchema), async (req, res, next) => {
 
       const payload = jwt.verify(token, secret);
       let user = await dbModule.readUserByEmail(payload.email);
+      
+      if (user) {
+        
+        if (req.body.password) {
+            user.password = await bcrypt.hash(req.body.password, 10);
+          }
 
-      if (req.body.password) {
-        user.password = await bcrypt.hash(req.body.password, 10);
+        // Now we need to issue a new JWT token.
+
+        const authPayload = { /* save user data that you will want later */ };
+        const authSecret = config.get('auth.secret');
+        const authExpiresIn = config.get('auth.tokenExpiresIn');
+        const authToken = jwt.sign(authPayload, authSecret, { expiresIn: authExpiresIn });
+
+        // Save the JWT token in a cookie.
+
+        const authMaxAge = parseInt(config.get('auth.cookieMaxAge'));
+        res.cookie('authToken', authToken, { maxAge: authMaxAge, httpOnly: true });
+
+        await dbModule.updateOneUser(user._id, req.body);
+
+        // Return the token back in the JSON response.
+
+          res.status(200).json([{ message:`My Profile Updated!  -  Full Name: ${user.fullName}  |  userId: ${user._id}`}, { authToken } ]);
+
+      } else {
+        res.status(404).json({error: `Error: User ${payload.email}, cannot be found!`});
       }
-
-      // Now we need to issue a new JWT token.
-
-      const authPayload = { /* save user data that you will want later */ };
-      const authSecret = config.get('auth.secret');
-      const authExpiresIn = config.get('auth.tokenExpiresIn');
-      const authToken = jwt.sign(authPayload, authSecret, { expiresIn: authExpiresIn });
-
-      // Save the JWT token in a cookie.
-
-      const authMaxAge = parseInt(config.get('auth.cookieMaxAge'));
-      res.cookie('authToken', authToken, { maxAge: authMaxAge, httpOnly: true });
-
-      // Create Edit Object
-
-      const editObj = {
-        timestamp: new Date(),
-        collection: 'Users',
-        operation: 'Update',
-        target: user._id,
-        update: req.body,
-        authToken: req.cookies.authToken
-      }
-
-      debugMain({editObj: editObj});
-
-      await dbModule.insertOneEdit(editObj);
-      await dbModule.updateOneUser(user._id, req.body);
-
-      // Return the token back in the JSON response.
-
-      res.status(200).json({ message: 'My Profile Updated!' + `  -  First Name: ${req.body.firstName}` });
 
     } else {
-      res.status(401).json( `Error: User ${req.email}, is not logged in!`);
+      res.status(401).json( `Error: User ${payload.email}, is not logged in!`);
     }
 
   } catch (err) {
     next(err);
   }
+})
 
-});
+// Find User By ID
+// COMPLETE: PROGRESS == 💯
 
-// Find User
-// INCOMPLETE: PRE-PROGRESS..
+// 🔲 Requirements: 
+
+// ✔️ 1. Returns a single user from the database as a JSON object.
+// ✔️ 2. Find the user based on the provided ID.
+// ✔️ 3. If the ID is invalid or the user is not found, return a 404 response.
 
 router.get('/:userId', validId('userId'), async (req, res, next) => {
   if (req.cookies.authToken != undefined) {
@@ -549,7 +553,7 @@ router.get('/:userId', validId('userId'), async (req, res, next) => {
       if (!user) {
         res.status(404).json({ error: `${userId} User not found` });
       } else {
-        res.json(user);
+        res.status(200).json(user);
       }
 
     } catch (err) {
@@ -563,7 +567,20 @@ router.get('/:userId', validId('userId'), async (req, res, next) => {
 });
 
 // Register User
-// INCOMPLETE: PRE-PROGRESS..
+// COMPLETE: PROGRESS == 💯
+
+
+// 🔲 Requirements: 
+
+// ✔️ 1. Inserts a new user into the database.  
+// ✔️ 2. Hash passwords using bcrypt. 
+// ✔️ 3. Generate a new JWT token and store it in a cookie. 
+// ✔️ 4. Returns a JSON object containing a message, the new userId, and a new token.
+// ✔️ 5. Accept the following fields via the body of the request:
+  // ✔️ 5.1 - fullName : string
+  // ✔️ 5.2 - email : string
+  // ✔️ 5.3 - password : string
+// ✔️ 6. Validate the body of the request using Joi.
 
 // Before the fun even begins, this function starts by running validBody(schema), and
 // pre-validated and sent directly to something like - req.body[n] = {name: name}; - where
@@ -596,11 +613,11 @@ router.put('/register', validBody(newUserSchema), async (req, res, next) => {
 
         user.password = await bcrypt.hash(user.password, 10);
         debugReg({hashedPass: user.password});
-        console.log('\n');
+        // console.log('\n');
 
         // Now we need to issue a new JWT token.
 
-        const authPayload = { "userId": `${user._id}`, "firstName": `${user.firstName}`, "email": `${user.email}`};
+        const authPayload = { "userId": `${user._id}`, "fullName": `${user.fullName}`};
         const authSecret = config.get('auth.secret');
         const authExpiresIn = config.get('auth.tokenExpiresIn');
         const authToken = jwt.sign(authPayload, authSecret, { expiresIn: authExpiresIn });
@@ -610,23 +627,12 @@ router.put('/register', validBody(newUserSchema), async (req, res, next) => {
         const authMaxAge = parseInt(config.get('auth.cookieMaxAge'));
         res.cookie('authToken', authToken, { maxAge: authMaxAge, httpOnly: true });
 
-        // Create Edit Object
-
-        const editObj = {
-          timestamp: new Date(),
-          collection: 'Users',
-          operation: 'Insert',
-          target: user._id,
-          update: user,
-          auth: req.cookies.auth
-        }
-
-        await dbModule.insertOneEdit(editObj);
         await dbModule.insertOneUser(user);
 
         // Return the token back in the JSON response.
 
-        res.status(200).json({ message: 'New User Registered!' + `  -  Full Name: ${req.body.firstName} ${req.body.lastName}` , authToken });
+        res.status(200).json([ {message: `New User Registered!  -  Full Name: ${req.body.fullName}  |  userId: ${user._id}`},
+                               {authToken: authToken} ]);
 
     } else {
       res.status(400).json({ error: 'Email already registered..' });
@@ -639,7 +645,16 @@ router.put('/register', validBody(newUserSchema), async (req, res, next) => {
 });
 
 // Login User
-// INCOMPLETE: PRE-PROGRESS..
+// COMPLETED: PROGRESS == 💯
+
+// ✔️ 1. Checks the user's credentials against the database.  
+// ✔️ 2. Compare passwords using bcrypt.
+// ✔️ 3. Generate a new JWT token and store it in a cookie. 
+// ✔️ 4. Returns a JSON object containing a message, the userId, and a new token.
+// ✔️ 5. Accept the following fields via the body of the request:
+//         { email : string }
+//         { password : string }
+// ✔️ 6. Validate the body of the request using Joi.
 
 // To log a user in, we have added new requirements, and create a session token for our user.
 // As with most routes, the first thing we do is check for the existence of our object, which  
@@ -741,9 +756,9 @@ router.put('/login', validBody(loginSchema), async (req, res, next) => {
         res.cookie('authToken', authToken, { maxAge: authMaxAge, httpOnly: true });
 
         debugMain(req.cookies);
-        console.log('\n');
+        // console.log('\n');
 
-        res.status(200).json( `Welcome back ${user.firstName}!`);
+        res.status(200).json([ { message: `Welcome back ${user.fullName}!  |  userID: ${user._id}` }, { authToken: authToken } ]);
 
       }
 
@@ -756,7 +771,6 @@ router.put('/login', validBody(loginSchema), async (req, res, next) => {
 });
 
 // Update User
-// INCOMPLETE: PRE-PROGRESS..
 
 // Here in update user the important thing to remember is that we will not need to use the user object that
 // already exists to create our updated one. With this is mind, we still first query and save the user object
@@ -811,7 +825,6 @@ router.put('/:userId', validId('userId'), validBody(updateUserSchema),  async (r
 });
 
 // Delete User
-// INCOMPLETE: PRE-PROGRESS
 
 router.delete('/:userId', validId('userId'), async (req, res, next) => {
  

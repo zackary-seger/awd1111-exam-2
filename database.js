@@ -1,5 +1,11 @@
+// ❗️❗️❗️ FIXME ❗️❗️❗️ \\
+
+// Debug not working.. 
+// Replacing with console.log() for now..
+
 import Debug from 'debug';
 const debug = Debug('app:database');
+
 import { MongoClient, ObjectId, Db } from 'mongodb';
 import config from 'config';
 
@@ -14,11 +20,27 @@ let _db = null;
 
 async function connect() {
   if (!_db) {
+
+    // ❗️❗️❗️ FIXME ❗️❗️❗️ \\
+
+    // Lines 30 & 31 do not correctly implement the use of .env,
+    // because of an unseen error, therefore .env is bypassed 
+    // for now..
+
     const dbUrl = config.get('db.url');
     const dbName = config.get('db.name');
+
+    console.log('dbUrl: ' + dbUrl);
+    console.log('\n');
+    console.log('dbName: ' + dbName);
+    console.log('\n');
+
     const client = await MongoClient.connect(dbUrl);
     _db = client.db(dbName);
-    debug('Connected to database');
+
+    console.log('Connected to database');
+    console.log('\n');
+
   }
   return _db;
 }
