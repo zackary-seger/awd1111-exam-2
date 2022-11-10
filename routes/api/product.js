@@ -3,6 +3,7 @@ import express from 'express';
 import Joi from 'joi';
 import { validId } from '../../middleware/validId.js';
 import { validBody } from '../../middleware/validBody.js';
+import { isAdmin } from '../../middleware/isAdmin.js';
 
 // Create Router
 const router = express.Router();
@@ -64,7 +65,7 @@ router.get('/name/:productName', async (req, res, next) => {
  
  });
 
-router.put('/new', validBody(newProductSchema), async (req, res, next) => {
+router.put('/new', isAdmin(), validBody(newProductSchema), async (req, res, next) => {
   // Create new product and send response as JSON
 
   const { name,
@@ -103,7 +104,7 @@ router.put('/new', validBody(newProductSchema), async (req, res, next) => {
 
 });
 
-router.put('/:productId', validId('productId'), validBody(updateProductSchema), async (req, res, next) => {
+router.put('/:productId', isAdmin(), validId('productId'), validBody(updateProductSchema), async (req, res, next) => {
   // Update existing product and send response as JSON;
   const productId = req.productId;
   const updateProduct = req.body;
@@ -124,7 +125,7 @@ router.put('/:productId', validId('productId'), validBody(updateProductSchema), 
   } 
 });
 
-router.delete('/:productId', validId('productId'), async (req, res, next) => {
+router.delete('/:productId', isAdmin(), validId('productId'), async (req, res, next) => {
   // Delete product and send response as JSON;
   const productId = req.productId;
 

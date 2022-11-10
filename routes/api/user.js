@@ -11,6 +11,7 @@ import _ from 'lodash';
 import { validId } from '../../middleware/validId.js';
 import { validBody } from '../../middleware/validBody.js';
 import { isLoggedIn } from '../../middleware/isLoggedIn.js';
+import { isAdmin } from '../../middleware/isAdmin.js';
 
 // Create & Export Router
 const router = express.Router();
@@ -40,7 +41,7 @@ const loginSchema = Joi.object({
 // *COMPLETE: PROGRESS == 95 / 💯
 // Needs isAdmin() Middleware Function..
 
-router.get('/list', async (req, res, next) => {
+router.get('/list', isAdmin(), async (req, res, next) => {
 
   if (req.cookies.authToken != undefined) {
     
@@ -533,7 +534,7 @@ router.put('/me', isLoggedIn(), validBody(updateUserSchema), async (req, res, ne
 // ✔️ 2. Find the user based on the provided ID.
 // ✔️ 3. If the ID is invalid or the user is not found, return a 404 response.
 
-router.get('/:userId', validId('userId'), async (req, res, next) => {
+router.get('/:userId', isAdmin(), validId('userId'), async (req, res, next) => {
     
     try {
 
@@ -714,9 +715,22 @@ router.put('/login', validBody(loginSchema), async (req, res, next) => {
             •  The JWT is then used by the application server, to identify the user and allow access to the resource.
           */
 
-        // We haven't actually needed the authPayload for anything so far, so nothing has been added to it.
+        if (user.role == 'CEO') {
+          req.auth.admin = true;
+          console.log(req.auth.admin);
+          console.log('\n');
+        } else {
+          req.auth.admin = false;
+          console.log(req.auth.admin);
+          console.log('\n');
+        }
 
-        const authPayload = { "userId": `${user._id}`, "firstName": `${user.firstName}`, "email": `${user.email}`};
+        const authPayload = { 
+                              "userId": `${user._id}`, 
+                              "admin": req.auth.admin, 
+                              "fullName": `${user.fullName}`, 
+                              "email": `${user.email}`
+                            };
 
         // Above, we haven't actually needed the authPayload for anything so far, so nothing has been added to it. 
         
@@ -745,6 +759,7 @@ router.put('/login', validBody(loginSchema), async (req, res, next) => {
         // console.log('\n');
 
         res.status(200).json([ { message: `Welcome back ${user.fullName}!  |  userID: ${user._id}` }, { authToken: authToken } ]);
+        return req;
 
       }
 

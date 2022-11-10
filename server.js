@@ -19,16 +19,19 @@ import { userRouter } from './routes/api/user.js';
 // Create Application
 
 const app = express();
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser(), helmet(), cors(), morgan('tiny'));
 
-app.use( helmet(), cors(), morgan('tiny'));
+// Register Routes - Call auth() Middleware immediately before and after
+// each '/route' call. This way we check for an authToken before executing
+// any request that goes through the system.
 
-// Register Routes
+app.use(auth());
 
-app.use('/api/product', auth(), productRouter);
-app.use('/api/user', auth(), userRouter);
+app.use('/api/product', productRouter, auth());
+app.use('/api/user', userRouter, auth());
 app.use('/', express.static('public', { index: 'index.html'}));
 
 app.get('/', (req, res, next) => {
